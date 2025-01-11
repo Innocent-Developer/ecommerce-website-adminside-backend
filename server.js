@@ -193,7 +193,7 @@ app.get("/admin/users/ahmad_11", async (req, res) => {
 
 // Login
 
-app.post("/login", async (req, res) => {
+app.post("/account/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
