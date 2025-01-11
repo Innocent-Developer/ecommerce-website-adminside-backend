@@ -171,7 +171,7 @@ app.post("/account/signup", async (req, res) => {
       message: "Signup successful.",
       data: {
         id: user._id,
-        Fullname: user.name,
+        Fullname: user.Fullname,
         username: user.username,
         email: user.email,
         token, 
