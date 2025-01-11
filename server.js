@@ -124,7 +124,29 @@ app.get("/", async (req, res) => {
 });
 
 
-
+// const mailer = async(email,_id)=>{
+//   try {
+//     const transporter = nodemailer.createTransport({
+//       service: "gmail",
+//       port:587,
+//       secure: false,
+//       auth: {
+//         user: process.env.MY_GMAIL,
+//         pass: process.env.PASSWORD,
+//       },
+//     })
+//     const mailOptions = {
+//       from: process.env.MY_GMAIL,
+//       to: email,
+//       subject: "Account Create Successful  ",
+//       html: `Your account has been created successfully. Your unique ID is: ${_id}`,
+      
+//     }
+//     await transporter.sendMail(mailOptions);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// }
 //signup
 app.post("/account/signup", async (req, res) => {
   try {
@@ -177,10 +199,12 @@ app.post("/account/signup", async (req, res) => {
         token, 
       },
     });
+    // await mailer(email,user._id);
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
   }
 });
+
 
 app.get("/admin/users/ahmad_11", async (req, res) => {
   try {
