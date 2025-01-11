@@ -53,10 +53,7 @@ const User = mongoose.model("signup", userSchema);
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-  origin: "http://localhost:3000", // Frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE"],
-}));
+app.use(cors());
 
 // Generate a unique ID
 const generateUniqueId = () => {
