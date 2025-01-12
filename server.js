@@ -158,7 +158,7 @@ app.post("/account/signup", async (req, res) => {
 
     await user.save();
 
-    // Generate a JWT token (without sensitive data like password)
+   
     const token = jwt.sign(
       { id: user._id, email: user.email },
       JWT_SECRET,
@@ -182,14 +182,6 @@ app.post("/account/signup", async (req, res) => {
   }
 });
 
-app.get("/admin/users/ahmad_11", async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.send({ success: true, data: users });
-  } catch (error) {
-    res.status(500).send({ success: false, error: error.message });
-  }
-});
 
 // Login
 
@@ -230,6 +222,15 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
+
+app.get("/admin/users/ahmad_11", async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.send({ success: true, data: users });
+  } catch (error) {
+    res.status(500).send({ success: false, error: error.message });
+  }
+});
 
 
 
