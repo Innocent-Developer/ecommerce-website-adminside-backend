@@ -46,6 +46,7 @@ const Order = mongoose.model("create-order-admin", orderSchema);
 const userSchema = new Schema({
   Fullname: { type: String },
   username: { type: String, required: true },
+  phoneNumber: { type: String, required: true ,unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
@@ -152,6 +153,7 @@ app.post("/account/signup", async (req, res) => {
     const user = new User({
       Fullname,
       username,
+      phoneNumber,
       email,
       password: hashedPassword,
     });
