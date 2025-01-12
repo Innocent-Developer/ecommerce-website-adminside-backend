@@ -129,7 +129,7 @@ app.get("/", async (req, res) => {
 //signup
 app.post("/account/signup", async (req, res) => {
   try {
-    const { Fullname, username, email, password } = req.body;
+    const { Fullname, username,phoneNumber, email, password } = req.body;
 
     // Validate input fields
     if ( !email || !password) {
