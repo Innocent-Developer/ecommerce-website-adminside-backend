@@ -131,7 +131,7 @@ app.post("/account/signup", async (req, res) => {
     const { Fullname, username, email, password } = req.body;
 
     // Validate input fields
-    if (!email || !password) {
+    if ( !email || !password) {
       return res
         .status(400)
         .send({ success: false, error: "All fields are required." });
@@ -165,36 +165,16 @@ app.post("/account/signup", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    // Set up nodemailer transporter
-    const transporter = nodemailer.createTransport({
-      service: "Gmail", // You can replace this with your email provider (e.g., Outlook, Yahoo)
-      auth: {
-        user: process.env.EMAIL, // Your email address
-        pass: process.env.EMAIL_PASSWORD, // Your email password or app password
-      },
-    });
-
-    // Email options
-    const mailOptions = {
-      from: process.env.EMAIL, // Sender address
-      to: email, // Recipient's email
-      subject: "Welcome to Our Platform!",
-      text: `Hi ${Fullname || username || "User"},\n\nThank you for signing up. We're excited to have you on board!\n\nBest regards,\nYour Team`,
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
-
     // Respond with the user data and token
     res.status(201).send({
       success: true,
-      message: "Signup successful. A welcome email has been sent.",
+      message: "Signup successful.",
       data: {
         id: user._id,
         Fullname: user.Fullname,
         username: user.username,
         email: user.email,
-        token,
+        token, 
       },
     });
   } catch (error) {
