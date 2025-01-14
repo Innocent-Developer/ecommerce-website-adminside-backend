@@ -233,6 +233,32 @@ app.post("/account/login", async (req, res) => {
 });
 
 
+// admin user get informations
+app.get('/getusersAdmin/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch the user from the database
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        error: 'User not found.',
+      });
+    }
+
+    res.send({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  };}
+  );
 
 
 
