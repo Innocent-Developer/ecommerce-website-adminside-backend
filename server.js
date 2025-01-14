@@ -46,7 +46,6 @@ const Order = mongoose.model("create-order-admin", orderSchema);
 const userSchema = new Schema({
   Fullname: { type: String },
   username: { type: String, required: true },
-  phoneNumber: { type: String, required: true ,unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
@@ -129,7 +128,7 @@ app.get("/", async (req, res) => {
 //signup
 app.post("/account/signup", async (req, res) => {
   try {
-    const { Fullname, username,phoneNumber, email, password } = req.body;
+    const { Fullname, username, email, password } = req.body;
 
     // Validate input fields
     if ( !email || !password) {
@@ -153,14 +152,13 @@ app.post("/account/signup", async (req, res) => {
     const user = new User({
       Fullname,
       username,
-      phoneNumber,
       email,
       password: hashedPassword,
     });
 
     await user.save();
 
-   
+    // Generate a JWT token (without sensitive data like password)
     const token = jwt.sign(
       { id: user._id, email: user.email },
       JWT_SECRET,
@@ -184,6 +182,14 @@ app.post("/account/signup", async (req, res) => {
   }
 });
 
+app.get("/admin/users/ahmad_11", async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.send({ success: true, data: users });
+  } catch (error) {
+    res.status(500).send({ success: false, error: error.message });
+  }
+});
 
 // Login
 
@@ -216,7 +222,9 @@ app.post("/account/login", async (req, res) => {
     );
     return res
       .status(200)
-      .send({ success: true, message: "Login successful.", token });
+      .send({ success: true, message: "Login successful.",data: { 
+        token: token,
+        id: user._id, } });
   } catch (error) {
     return res
       .status(500)
@@ -224,15 +232,6 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
-
-app.get("/admin/users/ahmad_11", async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.send({ success: true, data: users });
-  } catch (error) {
-    res.status(500).send({ success: false, error: error.message });
-  }
-});
 
 
 
