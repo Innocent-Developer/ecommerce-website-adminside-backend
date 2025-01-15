@@ -11,9 +11,6 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
-
-
-
 // Database connection
 mongoose
   .connect(process.env.MONGO_ADMIN_URL)
@@ -25,22 +22,28 @@ mongoose
   .catch((err) => {
     console.log("DB CONNECTION ERROR", err);
   });
-  app.use(express.json({ limit: '10mb' })); // For JSON
-  app.use(express.urlencoded({ extended: true })); // For form data
-  app.use(express.json());
-  app.use(cors());
+app.use(express.json({ limit: "10mb" })); // For JSON
+app.use(express.urlencoded({ extended: true })); // For form data
+app.use(express.json());
+app.use(cors());
 // Create schema for orders
 const orderSchema = new Schema({
-    productName: { type: String, required: true },
-    productPrice: { type: Number, required: true },
-    quantity: { type: Number, required: true, min: 1 },
-    productId: { type: String, required: true, unique: true },
-    productImage: { type: String, required: true ,unique: false },
-    productDescription: { type: String },
+  productName: { type: String, required: true },
+  productPrice: { type: Number, required: true },
+  quantity: { type: Number, required: true, min: 1 },
+  productId: { type: String, required: true, unique: true },
+  productImage: { type: String, required: true, unique: false },
+  productDescription: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date },
+  userInformations:{
+    usermail:{type:String, required:true,},
+    userid:{type:String, required:true,},
+
+  }
 });
+
 const Order = mongoose.model("create-order-admin", orderSchema);
-
-
 
 // Create schema for users
 const userSchema = new Schema({
@@ -53,10 +56,12 @@ const User = mongoose.model("signup", userSchema);
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-  origin: "http://localhost:3000", // Frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE"],
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  })
+);
 
 // Generate a unique ID
 const generateUniqueId = () => {
@@ -75,6 +80,12 @@ app.post("/admin/create-order", async (req, res) => {
       productId: generateUniqueId(),
       productImage: req.body.productImage,
       productDescription: req.body.productDescription,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userInformations: {
+        usermail: req.body.usermail,
+        userid: req.body.userid,
+      },
     });
     await createOrder.save();
     res.status(201).send({ success: true, data: createOrder });
@@ -123,15 +134,13 @@ app.get("/", async (req, res) => {
   }
 });
 
-
-
 //signup
 app.post("/account/signup", async (req, res) => {
   try {
     const { Fullname, username, email, password } = req.body;
 
     // Validate input fields
-    if ( !email || !password) {
+    if (!email || !password) {
       return res
         .status(400)
         .send({ success: false, error: "All fields are required." });
@@ -159,11 +168,9 @@ app.post("/account/signup", async (req, res) => {
     await user.save();
 
     // Generate a JWT token (without sensitive data like password)
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
     // Respond with the user data and token
     res.status(201).send({
@@ -174,7 +181,7 @@ app.post("/account/signup", async (req, res) => {
         Fullname: user.Fullname,
         username: user.username,
         email: user.email,
-        token, 
+        token,
       },
     });
   } catch (error) {
@@ -215,16 +222,17 @@ app.post("/account/login", async (req, res) => {
         .send({ success: false, error: "Invalid login credentials." });
     }
     // Generate a JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email }, 
-      JWT_SECRET, 
-      { expiresIn: "1h" } 
-    );
-    return res
-      .status(200)
-      .send({ success: true, message: "Login successful.",data: { 
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+    return res.status(200).send({
+      success: true,
+      message: "Login successful.",
+      data: {
         token: token,
-        id: user._id, } });
+        id: user._id,
+      },
+    });
   } catch (error) {
     return res
       .status(500)
@@ -232,9 +240,8 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
-
 // admin user get informations
-app.get('/getusersAdmin/:id', async (req, res) => {
+app.get("/getusersAdmin/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -244,7 +251,7 @@ app.get('/getusersAdmin/:id', async (req, res) => {
     if (!user) {
       return res.status(404).send({
         success: false,
-        error: 'User not found.',
+        error: "User not found.",
       });
     }
 
@@ -261,11 +268,8 @@ app.get('/getusersAdmin/:id', async (req, res) => {
       success: false,
       error: error.message,
     });
-  };}
-  );
-
-
-
+  }
+});
 
 // Server listening
 app.listen(port, () => {
