@@ -39,6 +39,7 @@ const orderSchema = new Schema({
     productDescription: { type: String },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date },
+    adminUserId:{ type: String, required: true},
 });
 const Order = mongoose.model("create-order-admin", orderSchema);
 
@@ -68,8 +69,9 @@ const generateUniqueId = () => {
 // Routes
 
 // Create order
-app.post("/admin/create-order", async (req, res) => {
+app.post("/admin/create-order/", async (req, res) => {
   try {
+    const userId = req.params.id;
     const createOrder = new Order({
       productName: req.body.productName,
       productPrice: req.body.productPrice,
@@ -79,6 +81,7 @@ app.post("/admin/create-order", async (req, res) => {
       productDescription: req.body.productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
+      adminUserId:  req.body.productName,
 
     });
     await createOrder.save();
