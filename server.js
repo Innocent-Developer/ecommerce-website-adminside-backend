@@ -40,6 +40,7 @@ const orderSchema = new Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date },
     adminUserId:{ type: String},
+    adminEmail:{ type: String},
 });
 const Order = mongoose.model("create-order-admin", orderSchema);
 
@@ -81,6 +82,7 @@ app.post("/admin/create-order/", async (req, res) => {
       createdAt: new Date(),
       updatedAt: new Date(),
       adminUserId:  req.body.adminUserId,
+      adminEmail: req.body.adminEmail,
 
     });
     await createOrder.save();
@@ -270,10 +272,7 @@ app.get('/getusersAdmin/:id', async (req, res) => {
     });
   };}
   );
-
-
-
-
+  
 // Server listening
 app.listen(port, () => {
   console.log(`Server is up and listening on port ${port}`);
