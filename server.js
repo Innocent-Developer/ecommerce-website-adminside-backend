@@ -180,9 +180,6 @@ app.post("/account/signup", async (req, res) => {
       message: "Signup successful.",
       data: {
         id: user._id,
-        Fullname: user.Fullname,
-        username: user.username,
-        email: user.email,
         token, 
       },
     });
@@ -262,6 +259,7 @@ app.get('/getusersAdmin/:id', async (req, res) => {
       data: {
         email: user.email,
         name: user.name,
+        username: user.username,
         id: user._id,
       },
     });
