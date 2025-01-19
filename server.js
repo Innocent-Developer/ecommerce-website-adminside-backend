@@ -52,6 +52,9 @@ const userSchema = new Schema({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date },
+  userImage: { type: String, default: "https://via.placeholder.com/150" },
 });
 const User = mongoose.model("signup", userSchema);
 
@@ -137,7 +140,7 @@ app.get("/", async (req, res) => {
 //signup
 app.post("/account/signup", async (req, res) => {
   try {
-    const { Fullname, username, email, password } = req.body;
+    const { Fullname, username, email, password,userImage } = req.body;
 
     // Validate input fields
     if ( !email || !password) {
@@ -260,6 +263,7 @@ app.get('/getusersAdmin/:id', async (req, res) => {
         email: user.email,
         name: user.name,
         username: user.username,
+        userImage: user.userImage,
         id: user._id,
       },
     });
