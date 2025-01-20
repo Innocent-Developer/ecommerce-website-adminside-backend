@@ -126,14 +126,14 @@ app.put("/admin/update-order/:id", async (req, res) => {
 });
 
 // Get all orders
-app.get("/", async (req, res) => {
-  try {
-    const orders = await Order.find({});
-    res.send({ success: true, data: orders });
-  } catch (error) {
-    res.status(500).send({ success: false, error: error.message });
-  }
-});
+// app.get("/", async (req, res) => {
+//   try {
+//     const orders = await Order.find({});
+//     res.send({ success: true, data: orders });
+//   } catch (error) {
+//     res.status(500).send({ success: false, error: error.message });
+//   }
+// });
 
 
 
@@ -193,7 +193,7 @@ app.post("/account/signup", async (req, res) => {
 
 
 
-app.get("/admin/users/:id", async (req, res) => {
+app.get("/admin/users/orderlist/:id", async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
@@ -201,7 +201,7 @@ app.get("/admin/users/:id", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find({ adminUserId: id }); // Ensure `adminUserId` is the correct field in your schema.
+    const orders = await Order.find({ adminUserId: id }); 
     res.send({ success: true, data: orders });
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -210,7 +210,7 @@ app.get("/admin/users/:id", async (req, res) => {
 });
 
 // get userinformation by id
-app.get("/user/:id", async (req, res) => {
+app.get("/admin/user/information/:id", async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
@@ -306,6 +306,24 @@ app.get('/getusersAdmin/:id', async (req, res) => {
   };}
   );
   
+
+
+  // logout user 
+  app.post('/logout', async (req, res) => {
+    const { userId } = req.body;
+    try {
+      // Example: Remove session or token from the database
+      await SessionModel.deleteOne({ userId });
+  
+      res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to logout' });
+    }
+  });
+  
+
+
+
 // Server listening
 app.listen(port, () => {
   console.log(`Server is up and listening on port ${port}`);
