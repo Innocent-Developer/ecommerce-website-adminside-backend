@@ -54,7 +54,7 @@ const userSchema = new Schema({
   password: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
-  userImage: { type: String, default: "https://via.placeholder.com/150" },
+  userImage: { type: String, default: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQaqiwrtc2R9MuIS83171xsgtTt81GddweP-g&s" },
 });
 const User = mongoose.model("signup", userSchema);
 
@@ -140,7 +140,7 @@ app.get("/", async (req, res) => {
 //signup
 app.post("/account/signup", async (req, res) => {
   try {
-    const { Fullname, username, email, password,userImage } = req.body;
+    const { Fullname, username, email, password } = req.body;
 
     // Validate input fields
     if ( !email || !password) {
@@ -191,14 +191,45 @@ app.post("/account/signup", async (req, res) => {
   }
 });
 
-app.get("/admin/users/ahmad_11", async (req, res) => {
+
+
+app.get("/admin/users/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).send({ success: false, error: "Admin user ID is required." });
+  }
+
   try {
-    const users = await User.find({});
-    res.send({ success: true, data: users });
+    const orders = await Order.find({ adminUserId: id }); // Ensure `adminUserId` is the correct field in your schema.
+    res.send({ success: true, data: orders });
   } catch (error) {
-    res.status(500).send({ success: false, error: error.message });
+    console.error("Error fetching orders:", error);
+    res.status(500).send({ success: false, error: "An internal server error occurred." });
   }
 });
+
+// get userinformation by id
+app.get("/user/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).send({ success: false, error: "User ID is required." });
+  }
+
+  try {
+    const user = await User.findById(id)
+    if (!user) {
+      return res.status(404).send({ success: false, error: "User not found." });
+    }
+
+    res.send({ success: true, data: user });
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).send({ success: false, error: "An internal server error occurred." });
+  }
+});
+
 
 // Login
 
