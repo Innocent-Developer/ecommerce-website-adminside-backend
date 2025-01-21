@@ -201,8 +201,9 @@ app.get("/admin/users/orderlist/:id", async (req, res) => {
   }
 
   try {
+    const orderCount = await Order.countDocuments({ adminUserId: id });
     const orders = await Order.find({ adminUserId: id }); 
-    res.send({ success: true, data: orders });
+    res.send({ success: true, orderCreate:orderCount, data: orders });
   } catch (error) {
     console.error("Error fetching orders:", error);
     res.status(500).send({ success: false, error: "An internal server error occurred." });
@@ -309,7 +310,7 @@ app.get('/getusersAdmin/:id', async (req, res) => {
 
 
   // logout user 
-  app.post('/logout', async (req, res) => {
+  app.post('/admin/logout', async (req, res) => {
     const { userId } = req.body;
     try {
       // Example: Remove session or token from the database
