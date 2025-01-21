@@ -278,6 +278,8 @@ app.post("/account/login", async (req, res) => {
 app.get('/getusersAdmin/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const orderCount = await Order.countDocuments({ adminUserId: id });
+
 
     // Fetch the user from the database
     const user = await User.findById(id);
@@ -298,6 +300,7 @@ app.get('/getusersAdmin/:id', async (req, res) => {
         userImage: user.userImage,
         id: user._id,
       },
+      orderCreate: orderCount,
     });
   } catch (error) {
     res.status(500).send({
