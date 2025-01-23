@@ -85,8 +85,10 @@ app.post("/admin/create-order/", async (req, res) => {
       productDescription: req.body.productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
+      status: ""||"Pending",
       adminUserId: req.body.adminUserId,
       adminEmail: req.body.adminEmail,
+
     });
     await createOrder.save();
     res.status(201).send({ success: true, data: createOrder });
