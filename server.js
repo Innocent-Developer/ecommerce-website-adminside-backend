@@ -301,7 +301,8 @@ app.get("/getusersAdmin/:id", async (req, res) => {
         userImage: user.userImage,
         id: user._id,
       },
-      orderList:  orderCount, ordersList ,
+      orderList:  orderCount,
+      orders: ordersList,
     });
   } catch (error) {
     res.status(500).send({
