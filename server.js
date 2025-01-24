@@ -85,10 +85,9 @@ app.post("/admin/create-order/", async (req, res) => {
       productDescription: req.body.productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: ""||"Pending",
+      status: "" || "Pending",
       adminUserId: req.body.adminUserId,
       adminEmail: req.body.adminEmail,
-
     });
     await createOrder.save();
     res.status(201).send({ success: true, data: createOrder });
@@ -99,7 +98,7 @@ app.post("/admin/create-order/", async (req, res) => {
 
 // Remove order
 app.delete("/admin/delete-order/:id", async (req, res) => {
-  try {
+  try {s
     const { id } = req.params;
     const deletedOrder = await Order.findByIdAndDelete(id);
     if (!deletedOrder) {
@@ -277,6 +276,114 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
+// 
+// Forget password route
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER, // Your email
+    pass: process.env.SMTP_PASS, // Your email password or app password
+  },
+});
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("Transporter verification failed:", error);
+  } else {
+    console.log("Transporter is ready to send emails:", success);
+  }
+});
+app.post("/account/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res
+        .status(404)
+        .send({ success: false, error: "Email does not exist." });
+    }
+
+    // Generate a reset token (valid for 15 minutes)
+    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "15m" });
+
+    // Configure nodemailer
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.SMTP_USER, // Your email
+        pass: process.env.SMTP_PASS, // Your email password or app password
+      },
+    });
+    transporter.verify((error, success) => {
+      if (error) {
+        console.error("Transporter verification failed:", error);
+      } else {
+        console.log("Transporter is ready to send emails:", success);
+      }
+    });
+
+    // Send reset link via email
+    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: "Password Reset Request",
+      html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">Click This link</a>`,
+    });
+    console.log("Reset link sent to:", {email,resetLink});
+    res.send({ success: true, message: "Password reset email sent." });
+  } catch (error) {
+    res.status(500).send({ success: false, error: error.message });
+  }
+});
+// Send password reset confirmation email
+async function sendResetPasswordEmail(userEmail) {
+  const mailOptions = {
+    from: process.env.SMTP_USER,
+    to: userEmail,
+    subject: "Password Reset Successful",
+    text: "Your password has been successfully reset.",
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to ${userEmail}`);
+  } catch (error) {
+    console.error("Error sending reset password email:", error);
+  }
+}
+
+// Reset password route
+app.post("/account/reset-password", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Verify token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).send({ success: false, error: "Invalid token." });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user's password
+    user.password = hashedPassword;
+    await user.save();
+    await sendResetPasswordEmail(user.email);
+
+    res.send({ success: true, message: "Password reset successful."  });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      error: error.name === "TokenExpiredError" ? "Token expired." : error.message,
+    });
+  }
+});
+
+
 // admin user get informations
 app.get("/getusersAdmin/:id", async (req, res) => {
   try {
@@ -303,7 +410,7 @@ app.get("/getusersAdmin/:id", async (req, res) => {
         userImage: user.userImage,
         id: user._id,
       },
-      orderList:  orderCount,
+      orderList: orderCount,
       orders: ordersList,
     });
   } catch (error) {
