@@ -61,7 +61,7 @@ const User = mongoose.model("signup", userSchema);
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:3000", // Frontend URL
+    origin:`${process.env.Frontend_URL}`, // Frontend URL
     methods: ["GET", "POST", "PUT", "DELETE"],
   })
 );
@@ -398,7 +398,7 @@ app.post("/account/forgot-password", async (req, res) => {
     });
 
     // Send reset link via email
-    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetLink = `${process.env.Frontend_URL}/${resetToken}`;
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
