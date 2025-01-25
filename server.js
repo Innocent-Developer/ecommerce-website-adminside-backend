@@ -398,7 +398,7 @@ app.post("/account/forgot-password", async (req, res) => {
     });
 
     // Send reset link via email
-    const resetLink = `${process.env.Frontend_URL}/${resetToken}`;
+    const resetLink = `${process.env.Frontend_URL}/reset-password/${resetToken}`;
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
