@@ -145,18 +145,26 @@ app.post("/admin/create-order/", async (req, res) => {
 });
 
 // Remove order
-app.delete("/admin/delete-order/:id", async (req, res) => {
-  try {s
-    const { id } = req.params;
+app.delete("/admin/delete-order", async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    // Validate the ID (optional for MongoDB ObjectId)
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).send({ success: false, error: "Invalid ID format" });
+    }
+
     const deletedOrder = await Order.findByIdAndDelete(id);
     if (!deletedOrder) {
       return res.status(404).send({ success: false, error: "Order not found" });
     }
+
     res.send({ success: true, message: `Order deleted: ${id}` });
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
   }
 });
+
 
 // Update order
 app.put("/admin/update-order/:id", async (req, res) => {
