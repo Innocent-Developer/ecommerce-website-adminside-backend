@@ -71,7 +71,7 @@ const generateUniqueId = () => {
   return `oS-${Date.now()}`;
 };
 
-//transporter
+//transporter 
 // Nodemailer Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -93,21 +93,11 @@ transporter.verify((error, success) => {
 // Create Order
 app.post("/admin/create-order/", async (req, res) => {
   try {
-    const {
-      productName,
-      productPrice,
-      quantity,
-      productImage,
-      productDescription,
-      adminUserId,
-      adminEmail,
-    } = req.body;
+    const { productName, productPrice, quantity, productImage, productDescription, adminUserId, adminEmail } = req.body;
 
     // Validate required fields
     if (!productName || !productPrice || !quantity || !adminEmail) {
-      return res
-        .status(400)
-        .send({ success: false, message: "Missing required fields" });
+      return res.status(400).send({ success: false, message: "Missing required fields" });
     }
 
     const createOrder = new Order({
@@ -166,9 +156,9 @@ app.post("/admin/create-order/", async (req, res) => {
       <span class="text-gray-500">Status:</span>
       <span
         class="px-3 py-1 rounded-full text-sm font-medium ${
-          createOrder.status === "Completed"
-            ? "bg-green-100 text-green-600"
-            : "bg-yellow-100 text-yellow-600"
+          createOrder.status === 'Completed'
+            ? 'bg-green-100 text-green-600'
+            : 'bg-yellow-100 text-yellow-600'
         }"
       >
         ${createOrder.status}
@@ -193,63 +183,23 @@ app.delete("/admin/delete-order", async (req, res) => {
   try {
     const { id } = req.body;
 
-    // Validate the order ID
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid or missing Order ID format" });
+    // Validate the ID (optional for MongoDB ObjectId)
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).send({ success: false, error: "Invalid ID format" });
     }
 
-    // Validate the admin ID
-    // if (!adminId || !adminId.match(/^[0-9a-fA-F]{24}$/)) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, error: "Invalid or missing Admin ID format" });
-    // }
-
-    // Fetch the admin email from the database
-    const admin = await Order.findById(id); // Assuming Admin is your admin model
-    if (!admin || !admin.email) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Admin not found or email missing" });
-    }
-
-    const adminEmail = admin.email;
-
-    // Attempt to delete the order
     const deletedOrder = await Order.findByIdAndDelete(id);
     if (!deletedOrder) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Order not found" });
+      return res.status(404).send({ success: false, error: "Order not found" });
     }
 
-    // Respond with success
-    res.json({ success: true, message: `Order deleted: ${id}` });
-
-    // Send email notification
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_USER,
-        to: adminEmail, // Use the fetched admin email
-        subject: "Order Deletion Notification",
-        html: `
-          <h1>Order Deleted Successfully</h1>
-          <p>Order ID: ${id}</p>
-          <p>Deletion Time: ${new Date().toLocaleString()}</p>
-        `,
-      });
-      console.log("Email sent successfully to admin:", adminEmail);
-    } catch (emailError) {
-      console.error("Failed to send email notification:", emailError);
-    }
+    res.send({ success: true, message: `Order deleted: ${id}` });
+    
   } catch (error) {
-    // General error handling
-    console.error("Error deleting order:", error);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
+    res.status(500).send({ success: false, error: error.message });
   }
 });
+
 
 // Update order
 app.put("/admin/update-order/:id", async (req, res) => {
@@ -266,6 +216,8 @@ app.put("/admin/update-order/:id", async (req, res) => {
     res.status(500).send({ success: false, error: error.message });
   }
 });
+
+
 
 //signup
 app.post("/account/signup", async (req, res) => {
@@ -407,6 +359,11 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
+
+
+
+
+ 
 // Forget password route
 
 app.post("/account/forgot-password", async (req, res) => {
@@ -422,9 +379,7 @@ app.post("/account/forgot-password", async (req, res) => {
     }
 
     // Generate a reset token (valid for 15 minutes)
-    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
-      expiresIn: "15m",
-    });
+    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "15m" });
 
     // Configure nodemailer
     const transporter = nodemailer.createTransport({
@@ -450,7 +405,7 @@ app.post("/account/forgot-password", async (req, res) => {
       subject: "Password Reset Request",
       html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">Click This link</a>`,
     });
-    console.log("Reset link sent to:", { email, resetLink });
+    console.log("Reset link sent to:", {email,resetLink});
     res.send({ success: true, message: "Password reset email sent." });
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
@@ -493,15 +448,15 @@ app.post("/account/reset-password", async (req, res) => {
     await user.save();
     await sendResetPasswordEmail(user.email);
 
-    res.send({ success: true, message: "Password reset successful." });
+    res.send({ success: true, message: "Password reset successful."  });
   } catch (error) {
     res.status(500).send({
       success: false,
-      error:
-        error.name === "TokenExpiredError" ? "Token expired." : error.message,
+      error: error.name === "TokenExpiredError" ? "Token expired." : error.message,
     });
   }
 });
+
 
 // admin user get informations
 app.get("/getusersAdmin/:id", async (req, res) => {
