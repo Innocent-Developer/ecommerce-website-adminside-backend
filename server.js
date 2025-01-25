@@ -264,7 +264,14 @@ app.post("/account/signup", async (req, res) => {
       data: {
         id: user._id,
         token,
+
       },
+    });
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: user.email,
+      subject: "Account Create Successfully",
+      html: `<p>Your Accout create successfully <br> If any Problem Please Click => <a href="https://wa.me/+923254472055">Contact Us</a></p>`,
     });
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
