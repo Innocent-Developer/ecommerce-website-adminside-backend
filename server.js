@@ -193,35 +193,61 @@ app.delete("/admin/delete-order", async (req, res) => {
   try {
     const { id } = req.body;
 
-    // Validate the ID (optional for MongoDB ObjectId)
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    // Validate the order ID
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return res
         .status(400)
-        .send({ success: false, error: "Invalid ID format" });
+        .json({ success: false, error: "Invalid or missing Order ID format" });
     }
 
+    // Validate the admin ID
+    // if (!adminId || !adminId.match(/^[0-9a-fA-F]{24}$/)) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, error: "Invalid or missing Admin ID format" });
+    // }
+
+    // Fetch the admin email from the database
+    const admin = await Order.findById(id); // Assuming Admin is your admin model
+    if (!admin || !admin.email) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Admin not found or email missing" });
+    }
+
+    const adminEmail = admin.email;
+
+    // Attempt to delete the order
     const deletedOrder = await Order.findByIdAndDelete(id);
     if (!deletedOrder) {
-      return res.status(404).send({ success: false, error: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Order not found" });
     }
 
-    res.send({ success: true, message: `Order deleted: ${id}` });
+    // Respond with success
+    res.json({ success: true, message: `Order deleted: ${id}` });
+
     // Send email notification
     try {
       await transporter.sendMail({
         from: process.env.SMTP_USER,
-        to: adminEmail,
-        subject: "Order delete information",
-        html: ` <h1>Order delete Successfull</h1>
-                <p>order id: ${id}</p>
-                <p>Order Delete At : ${new Date()}</p>`,
+        to: adminEmail, // Use the fetched admin email
+        subject: "Order Deletion Notification",
+        html: `
+          <h1>Order Deleted Successfully</h1>
+          <p>Order ID: ${id}</p>
+          <p>Deletion Time: ${new Date().toLocaleString()}</p>
+        `,
       });
-      console.log("Email sent successfully.");
+      console.log("Email sent successfully to admin:", adminEmail);
     } catch (emailError) {
-      console.error("Failed to send email:", emailError);
+      console.error("Failed to send email notification:", emailError);
     }
   } catch (error) {
-    res.status(500).send({ success: false, error: error.message });
+    // General error handling
+    console.error("Error deleting order:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 });
 
