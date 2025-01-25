@@ -276,7 +276,11 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
-// 
+
+
+
+
+ 
 // Forget password route
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -343,7 +347,7 @@ async function sendResetPasswordEmail(userEmail) {
     from: process.env.SMTP_USER,
     to: userEmail,
     subject: "Password Reset Successful",
-    text: "Your password has been successfully reset.",
+    html: `Your password has been successfully reset. <br> If any Problem  <h1>Contact us : <a href ="https://wa.me/+923254472055/ I need Help">Whatsapp </a></h1> `,
   };
 
   try {
