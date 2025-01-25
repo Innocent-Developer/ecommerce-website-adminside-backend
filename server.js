@@ -71,27 +71,75 @@ const generateUniqueId = () => {
   return `oS-${Date.now()}`;
 };
 
-// Routes
+//transporter 
+// Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-// Create order
+// Verify Transporter
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("Transporter verification failed:", error);
+  } else {
+    console.log("Transporter is ready to send emails:", success);
+  }
+});
+
+// Create Order
 app.post("/admin/create-order/", async (req, res) => {
   try {
+    const { productName, productPrice, quantity, productImage, productDescription, adminUserId, adminEmail } = req.body;
+
+    // Validate required fields
+    if (!productName || !productPrice || !quantity || !adminEmail) {
+      return res.status(400).send({ success: false, message: "Missing required fields" });
+    }
+
     const createOrder = new Order({
-      productName: req.body.productName,
-      productPrice: req.body.productPrice,
-      quantity: req.body.quantity,
+      productName,
+      productPrice,
+      quantity,
       productId: generateUniqueId(),
-      productImage: req.body.productImage,
-      productDescription: req.body.productDescription,
+      productImage,
+      productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: "" || "Pending",
-      adminUserId: req.body.adminUserId,
-      adminEmail: req.body.adminEmail,
+      status: "Pending",
+      adminUserId,
+      adminEmail,
     });
+
+    // Save order to the database
     await createOrder.save();
+
+    // Respond with success
     res.status(201).send({ success: true, data: createOrder });
+
+    // Send email notification
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: adminEmail,
+        subject: "Order created information",
+        html: `<h1>Order Created Successfully</h1>
+               <h3>Order Id  : ${createOrder._id}</h3>
+               <h3>Product Name : ${createOrder.productName}</h3>
+               <h3>Product Price : ${createOrder.productPrice}</h3>
+               <img src="${createOrder.productImage}" alt="Product Image">
+               <h3>Created At : ${createOrder.createdAt}</h3>
+               <h3>Status : ${createOrder.status}</h3>`,
+      });
+      console.log("Email sent successfully.");
+    } catch (emailError) {
+      console.error("Failed to send email:", emailError);
+    }
   } catch (error) {
+    console.error("Error creating order:", error);
     res.status(500).send({ success: false, error: error.message });
   }
 });
@@ -126,15 +174,7 @@ app.put("/admin/update-order/:id", async (req, res) => {
   }
 });
 
-// Get all orders
-// app.get("/", async (req, res) => {
-//   try {
-//     const orders = await Order.find({});
-//     res.send({ success: true, data: orders });
-//   } catch (error) {
-//     res.status(500).send({ success: false, error: error.message });
-//   }
-// });
+
 
 //signup
 app.post("/account/signup", async (req, res) => {
@@ -282,20 +322,7 @@ app.post("/account/login", async (req, res) => {
 
  
 // Forget password route
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.SMTP_USER, // Your email
-    pass: process.env.SMTP_PASS, // Your email password or app password
-  },
-});
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Transporter verification failed:", error);
-  } else {
-    console.log("Transporter is ready to send emails:", success);
-  }
-});
+
 app.post("/account/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -352,7 +379,7 @@ async function sendResetPasswordEmail(userEmail) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to ${userEmail}`);
+    console.log(`Password reset email sent to this E-Mail :-: ${userEmail}`);
   } catch (error) {
     console.error("Error sending reset password email:", error);
   }
