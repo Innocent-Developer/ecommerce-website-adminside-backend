@@ -126,13 +126,47 @@ app.post("/admin/create-order/", async (req, res) => {
         from: process.env.SMTP_USER,
         to: adminEmail,
         subject: "Order created information",
-        html: `<h1>Order Created Successfully</h1>
-               <h3>Order Id  : ${createOrder._id}</h3>
-               <h3>Product Name : ${createOrder.productName}</h3>
-               <h3>Product Price : ${createOrder.productPrice}</h3>
-               <img src="${createOrder.productImage}" alt="Product Image">
-               <h3>Created At : ${createOrder.createdAt}</h3>
-               <h3>Status : ${createOrder.status}</h3>`,
+        html: `<div class="max-w-md mx-auto p-6 bg-white shadow-lg rounded-2xl">
+  <h1 class="text-2xl font-bold text-green-600 mb-4">Order Created Successfully</h1>
+  <div class="space-y-3">
+    <h3 class="text-lg font-semibold">
+      <span class="text-gray-500">Order Id:</span>
+      <span class="text-gray-900">${createOrder._id}</span>
+    </h3>
+    <h3 class="text-lg font-semibold">
+      <span class="text-gray-500">Product Name:</span>
+      <span class="text-gray-900">${createOrder.productName}</span>
+    </h3>
+    <h3 class="text-lg font-semibold">
+      <span class="text-gray-500">Product Price:</span>
+      <span class="text-gray-900">${createOrder.productPrice}</span>
+    </h3>
+    <div class="flex justify-center my-4">
+      <img
+        src="${createOrder.productImage}"
+        alt="Product Image"
+        class="h-40 w-40 object-cover rounded-lg border"
+      />
+    </div>
+    <h3 class="text-lg font-semibold">
+      <span class="text-gray-500">Created At:</span>
+      <span class="text-gray-900">${createOrder.createdAt}</span>
+    </h3>
+    <h3 class="text-lg font-semibold">
+      <span class="text-gray-500">Status:</span>
+      <span
+        class="px-3 py-1 rounded-full text-sm font-medium ${
+          createOrder.status === 'Completed'
+            ? 'bg-green-100 text-green-600'
+            : 'bg-yellow-100 text-yellow-600'
+        }"
+      >
+        ${createOrder.status}
+      </span>
+    </h3>
+  </div>
+</div>
+`,
       });
       console.log("Email sent successfully.");
     } catch (emailError) {
