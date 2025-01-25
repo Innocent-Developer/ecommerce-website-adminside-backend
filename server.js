@@ -347,7 +347,7 @@ async function sendResetPasswordEmail(userEmail) {
     from: process.env.SMTP_USER,
     to: userEmail,
     subject: "Password Reset Successful",
-    html: `Your password has been successfully reset. <br> If any Problem  <h1>Contact us : <a href ="https://wa.me/+923254472055/ I need Help">Whatsapp </a></h1> `,
+    html: `Your password has been successfully reset. <br> If any Problem  <h1>Contact us : <a href ="https://wa.me/+923254472055/">Whatsapp </a></h1> `,
   };
 
   try {
