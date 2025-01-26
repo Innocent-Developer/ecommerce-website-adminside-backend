@@ -141,13 +141,6 @@ app.post("/admin/create-order/", async (req, res) => {
       <span class="text-gray-500">Product Price:</span>
       <span class="text-gray-900">${createOrder.productPrice}</span>
     </h3>
-    <div class="flex justify-center my-4">
-      <img
-        src="${createOrder.productImage}"
-        alt="Product Image"
-        class="h-40 w-40 object-cover rounded-lg border"
-      />
-    </div>
     <h3 class="text-lg font-semibold">
       <span class="text-gray-500">Created At:</span>
       <span class="text-gray-900">${createOrder.createdAt}</span>
