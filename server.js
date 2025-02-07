@@ -383,22 +383,68 @@ app.post("/account/login", async (req, res) => {
         .status(400)
         .send({ success: false, error: "Email and password are required." });
     }
+
     const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(400)
         .send({ success: false, error: "Invalid login credentials." });
     }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res
         .status(400)
         .send({ success: false, error: "Invalid login credentials." });
     }
-    // Generate a JWT token
+
+    // Generate JWT token
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
       expiresIn: "1h",
     });
+
+    // Get client's IP address
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // Send Login Notification Email
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: user.email,
+      subject: "🔒 New Login Detected on Your Account",
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
+          <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background-color: #4f46e5; color: #ffffff; padding: 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Login Alert</h1>
+            </div>
+            <div style="padding: 30px; color: #333333;">
+              <p style="font-size: 18px; margin-bottom: 20px;">
+                Hello <strong>${user.Fullname}</strong>,
+              </p>
+              <p style="font-size: 16px; line-height: 1.5;">
+                We noticed a login to your account from the following details:
+              </p>
+              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 20px 0;">
+               
+                <li><strong>Email:</strong> ${user.email}</li>
+                <li><strong>IP Address:</strong> ${clientIP}</li>
+              </ul>
+              <p style="font-size: 16px;">
+                If this was not you, please secure your account immediately by changing your password.
+              </p>
+              <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                📞 Contact Support
+              </a>
+            </div>
+            <div style="background-color: #f4f4f7; padding: 15px; text-align: center; color: #888888; font-size: 14px;">
+              If you recognize this activity, no further action is needed.
+            </div>
+          </div>
+        </div>
+      `,
+    });
+
+    // Send successful login response
     return res.status(200).send({
       success: true,
       message: "Login successful.",
@@ -407,7 +453,9 @@ app.post("/account/login", async (req, res) => {
         id: user._id,
       },
     });
+
   } catch (error) {
+    console.error("Login error:", error);
     return res
       .status(500)
       .send({ success: false, error: "An error occurred. Please try again." });
