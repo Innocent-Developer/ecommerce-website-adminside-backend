@@ -10,6 +10,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
+const axios = require('axios');
 
 // Database connection
 mongoose
