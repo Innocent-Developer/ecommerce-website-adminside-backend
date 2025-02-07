@@ -36,6 +36,12 @@ const orderSchema = new Schema({
   productDescription: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
+  status: { 
+    type: String, 
+    enum: ['Pending', 'Completed'], 
+    default: 'Pending' 
+  },
+
   adminUserId: { type: String },
   adminEmail: { type: String },
 });
@@ -131,6 +137,7 @@ app.post("/admin/create-order/", async (req, res) => {
     res.status(201).send({ success: true, data: createOrder });
 
     // Send email notification
+    // Send email notification
     try {
       await transporter.sendMail({
         from: process.env.SMTP_USER,
@@ -141,33 +148,35 @@ app.post("/admin/create-order/", async (req, res) => {
         <h1 style="font-size: 24px; color: #047857; text-align: center; margin-bottom: 20px;">🎉 Order Confirmation</h1>
         <p style="font-size: 16px; text-align: center; color: #4b5563;">Thank you for your purchase! Here are the details of your order:</p>
 
+        <img src=\${createOrder.productImage}alt="Product Image" style="display: block; margin: 20px auto; border-radius: 10px; max-width: 100%; height: auto;">
+
         <div style="margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 15px; border: 1px solid #e5e7eb;">
           <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #111827;">Order Summary</h3>
 
           <p style="margin: 8px 0;">
             <strong style="color: #6b7280;">Order ID:</strong>
-            <span style="color: #111827;">${createOrder._id}</span>
+            <span style="color: #111827;">\${createOrder._id}</span>
           </p>
           <p style="margin: 8px 0;">
             <strong style="color: #6b7280;">Product Name:</strong>
-            <span style="color: #111827;">${createOrder.productName}</span>
+            <span style="color: #111827;">\${createOrder.productName}</span>
           </p>
           <p style="margin: 8px 0;">
             <strong style="color: #6b7280;">Product Price:</strong>
-            <span style="color: #111827;">$${createOrder.productPrice}</span>
+            <span style="color: #111827;">\$ \${createOrder.productPrice}</span>
           </p>
           <p style="margin: 8px 0;">
             <strong style="color: #6b7280;">Created At:</strong>
-            <span style="color: #111827;">${createOrder.createdAt}</span>
+            <span style="color: #111827;">\${createOrder.createdAt}</span>
           </p>
           <p style="margin: 8px 0;">
             <strong style="color: #6b7280;">Status:</strong>
-            <span style="display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 14px; font-weight: 600; ${
-              createOrder.status === "Completed"
-                ? "background-color: #d1fae5; color: #047857;"
-                : "background-color: #fef9c3; color: #b45309;"
+            <span style="display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 14px; font-weight: 600; \${
+              createOrder.status === 'Completed'
+                ? 'background-color: #d1fae5; color: #047857;'
+                : 'background-color: #fef9c3; color: #b45309;'
             }">
-              ${createOrder.status}
+              \${createOrder.status}
             </span>
           </p>
         </div>
