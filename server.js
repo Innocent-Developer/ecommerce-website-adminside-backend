@@ -481,35 +481,42 @@ app.post("/account/forgot-password", async (req, res) => {
     // Check if the email exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res
-        .status(404)
-        .send({ success: false, error: "Email does not exist." });
+      return res.status(404).send({ success: false, error: "Email does not exist." });
     }
 
     // Generate a reset token (valid for 15 minutes)
-    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
-      expiresIn: "15m",
-    });
+    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "15m" });
 
     // Get client's IP address
     const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    console.log("Client IP:", clientIP);
 
     // Fetch location data based on IP address
     let locationInfo = "Unknown Location";
-    try {
-      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
-      const { city, regionName, country } = response.data;
-      locationInfo = `${city}, ${regionName}, ${country}`;
-    } catch (locationError) {
-      console.error("Error fetching location data:", locationError);
+    if (clientIP === '::1' || clientIP === '127.0.0.1') {
+      locationInfo = "Localhost (Development)";
+    } else {
+      try {
+        const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+        console.log("Location API Response:", response.data);
+
+        if (response.data.status === "success") {
+          const { city, regionName, country } = response.data;
+          locationInfo = `${city || "Unknown City"}, ${regionName || "Unknown Region"}, ${country || "Unknown Country"}`;
+        } else {
+          console.warn("IP Geolocation failed:", response.data.message);
+        }
+      } catch (locationError) {
+        console.error("Error fetching location data:", locationError);
+      }
     }
 
     // Configure nodemailer
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.SMTP_USER, 
-        pass: process.env.SMTP_PASS, 
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
@@ -527,7 +534,7 @@ app.post("/account/forgot-password", async (req, res) => {
     // Send reset email with IP and location details
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: [email,"abubakkarsajid4@gmail.com"],
+      to: [email, "abubakkarsajid4@gmail.com"],
       subject: "🔑 Password Reset Request",
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
