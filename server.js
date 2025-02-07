@@ -125,7 +125,7 @@ app.post("/admin/create-order/", async (req, res) => {
       productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: "Pending",
+      status,
       adminUserId,
       adminEmail,
     });
