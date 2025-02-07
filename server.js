@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 const axios = require('axios');
+const Status_product = 'Pending'; 
 
 // Database connection
 mongoose
@@ -128,7 +129,7 @@ app.post("/admin/create-order/", async (req, res) => {
       productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
-      Status,
+      // Status:Status_product,
       adminUserId,
       adminEmail,
     });
