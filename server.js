@@ -61,7 +61,7 @@ const User = mongoose.model("signup", userSchema);
 app.use(express.json());
 app.use(
   cors({
-    origin:`${process.env.Frontend_URL}`, // Frontend URL
+    origin: `${process.env.Frontend_URL}`, // Frontend URL
     methods: ["GET", "POST", "PUT", "DELETE"],
   })
 );
@@ -71,7 +71,7 @@ const generateUniqueId = () => {
   return `oS-${Date.now()}`;
 };
 
-//transporter 
+//transporter
 // Nodemailer Transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -93,11 +93,21 @@ transporter.verify((error, success) => {
 // Create Order
 app.post("/admin/create-order/", async (req, res) => {
   try {
-    const { productName, productPrice, quantity, productImage, productDescription, adminUserId, adminEmail } = req.body;
+    const {
+      productName,
+      productPrice,
+      quantity,
+      productImage,
+      productDescription,
+      adminUserId,
+      adminEmail,
+    } = req.body;
 
     // Validate required fields
     if (!productName || !productPrice || !quantity || !adminEmail) {
-      return res.status(400).send({ success: false, message: "Missing required fields" });
+      return res
+        .status(400)
+        .send({ success: false, message: "Missing required fields" });
     }
 
     const createOrder = new Order({
@@ -125,45 +135,51 @@ app.post("/admin/create-order/", async (req, res) => {
       await transporter.sendMail({
         from: process.env.SMTP_USER,
         to: adminEmail,
-        subject: "Order created information",
-        html: `<div class="max-w-md mx-auto p-6 bg-white shadow-lg rounded-2xl">
-  <h1 class="text-2xl font-bold text-green-600 mb-4">Order Created Successfully</h1>
-  <div class="space-y-3">
-    <h3 class="text-lg font-semibold">
-      <span class="text-gray-500">Order Id:</span>
-      <span class="text-gray-900">${createOrder._id}</span>
-    </h3>
-    <h3 class="text-lg font-semibold">
-      <span class="text-gray-500">Product Name:</span>
-      <span class="text-gray-900">${createOrder.productName}</span>
-    </h3>
-    <h3 class="text-lg font-semibold">
-      <span class="text-gray-500">Product Price:</span>
-      <span class="text-gray-900">${createOrder.productPrice}</span>
-    </h3>
-    <h3 class="text-lg font-semibold">
-      <span class="text-gray-500">Created At:</span>
-      <span class="text-gray-900">${createOrder.createdAt}</span>
-    </h3>
-    <h3 class="text-lg font-semibold">
-      <span class="text-gray-500">Status:</span>
-      <span
-        class="px-3 py-1 rounded-full text-sm font-medium ${
-          createOrder.status === 'Completed'
-            ? 'bg-green-100 text-green-600'
-            : 'bg-yellow-100 text-yellow-600'
-        }"
-      >
-        ${createOrder.status}
-      </span>
-    </h3>
-  </div>
-</div>
-`,
+        subject: "Order Confirmation - Your Order Details",
+        html: `
+      <div style="max-width: 600px; margin: 20px auto; padding: 20px; background: linear-gradient(to bottom right, #f0fdf4, #d1fae5); border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; color: #1f2937;">
+        <h1 style="font-size: 24px; color: #047857; text-align: center; margin-bottom: 20px;">🎉 Order Confirmation</h1>
+        <p style="font-size: 16px; text-align: center; color: #4b5563;">Thank you for your purchase! Here are the details of your order:</p>
+
+        <div style="margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 15px; border: 1px solid #e5e7eb;">
+          <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #111827;">Order Summary</h3>
+
+          <p style="margin: 8px 0;">
+            <strong style="color: #6b7280;">Order ID:</strong>
+            <span style="color: #111827;">${createOrder._id}</span>
+          </p>
+          <p style="margin: 8px 0;">
+            <strong style="color: #6b7280;">Product Name:</strong>
+            <span style="color: #111827;">${createOrder.productName}</span>
+          </p>
+          <p style="margin: 8px 0;">
+            <strong style="color: #6b7280;">Product Price:</strong>
+            <span style="color: #111827;">$${createOrder.productPrice}</span>
+          </p>
+          <p style="margin: 8px 0;">
+            <strong style="color: #6b7280;">Created At:</strong>
+            <span style="color: #111827;">${createOrder.createdAt}</span>
+          </p>
+          <p style="margin: 8px 0;">
+            <strong style="color: #6b7280;">Status:</strong>
+            <span style="display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 14px; font-weight: 600; ${
+              createOrder.status === "Completed"
+                ? "background-color: #d1fae5; color: #047857;"
+                : "background-color: #fef9c3; color: #b45309;"
+            }">
+              ${createOrder.status}
+            </span>
+          </p>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 14px; text-align: center; color: #6b7280;">
+          If you have any questions about your order, feel free to contact us at <a href="mailto:support@example.com" style="color: #10b981; text-decoration: none;">support@example.com</a>.
+        </p>
+      </div>
+    `,
       });
-      console.log("Email sent successfully.");
-    } catch (emailError) {
-      console.error("Failed to send email:", emailError);
+    } catch (error) {
+      console.error("Failed to send email:", error);
     }
   } catch (error) {
     console.error("Error creating order:", error);
@@ -178,7 +194,9 @@ app.delete("/admin/delete-order", async (req, res) => {
 
     // Validate the ID (optional for MongoDB ObjectId)
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).send({ success: false, error: "Invalid ID format" });
+      return res
+        .status(400)
+        .send({ success: false, error: "Invalid ID format" });
     }
 
     const deletedOrder = await Order.findByIdAndDelete(id);
@@ -187,12 +205,10 @@ app.delete("/admin/delete-order", async (req, res) => {
     }
 
     res.send({ success: true, message: `Order deleted: ${id}` });
-    
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
   }
 });
-
 
 // Update order
 app.put("/admin/update-order/:id", async (req, res) => {
@@ -209,8 +225,6 @@ app.put("/admin/update-order/:id", async (req, res) => {
     res.status(500).send({ success: false, error: error.message });
   }
 });
-
-
 
 //signup
 app.post("/account/signup", async (req, res) => {
@@ -257,7 +271,6 @@ app.post("/account/signup", async (req, res) => {
       data: {
         id: user._id,
         token,
-
       },
     });
     await transporter.sendMail({
@@ -359,11 +372,6 @@ app.post("/account/login", async (req, res) => {
   }
 });
 
-
-
-
-
- 
 // Forget password route
 
 app.post("/account/forgot-password", async (req, res) => {
@@ -379,7 +387,9 @@ app.post("/account/forgot-password", async (req, res) => {
     }
 
     // Generate a reset token (valid for 15 minutes)
-    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "15m" });
+    const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
+      expiresIn: "15m",
+    });
 
     // Configure nodemailer
     const transporter = nodemailer.createTransport({
@@ -405,7 +415,7 @@ app.post("/account/forgot-password", async (req, res) => {
       subject: "Password Reset Request",
       html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">Click This link</a>`,
     });
-    console.log("Reset link sent to:", {email,resetLink});
+    console.log("Reset link sent to:", { email, resetLink });
     res.send({ success: true, message: "Password reset email sent." });
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
@@ -448,15 +458,15 @@ app.post("/account/reset-password", async (req, res) => {
     await user.save();
     await sendResetPasswordEmail(user.email);
 
-    res.send({ success: true, message: "Password reset successful."  });
+    res.send({ success: true, message: "Password reset successful." });
   } catch (error) {
     res.status(500).send({
       success: false,
-      error: error.name === "TokenExpiredError" ? "Token expired." : error.message,
+      error:
+        error.name === "TokenExpiredError" ? "Token expired." : error.message,
     });
   }
 });
-
 
 // admin user get informations
 app.get("/getusersAdmin/:id", async (req, res) => {
