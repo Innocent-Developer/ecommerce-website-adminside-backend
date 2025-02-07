@@ -36,7 +36,7 @@ const orderSchema = new Schema({
   productDescription: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
-  status: { 
+  Status: { 
     type: String, 
     enum: ['Pending', 'Completed'], 
     default: 'Pending' 
@@ -125,7 +125,7 @@ app.post("/admin/create-order/", async (req, res) => {
       productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status,
+      Status,
       adminUserId,
       adminEmail,
     });
@@ -172,7 +172,7 @@ app.post("/admin/create-order/", async (req, res) => {
           <p style="margin: 8px 0;">
             <strong style="color: #6b7280;">Status:</strong>
             <span style="display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 14px; font-weight: 600; \${
-              createOrder.status === 'Completed'
+              createOrder.Status === 'Completed'
                 ? 'background-color: #d1fae5; color: #047857;'
                 : 'background-color: #fef9c3; color: #b45309;'
             }">
