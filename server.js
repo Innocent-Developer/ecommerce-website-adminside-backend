@@ -36,10 +36,10 @@ const orderSchema = new Schema({
   productDescription: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
-  Status: { 
-    type: String, 
-    enum: ['Pending', 'Completed'], 
-    default: 'Pending' 
+  Status: {
+    type: String,
+    enum: ["Pending", "Completed"],
+    default: "Pending",
   },
 
   adminUserId: { type: String },
@@ -319,8 +319,6 @@ app.post("/account/signup", async (req, res) => {
         </div>
       `,
     });
-    
-    
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
   }
@@ -404,7 +402,17 @@ app.post("/account/login", async (req, res) => {
     });
 
     // Get client's IP address
-    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const clientIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    // Fetch location data based on IP address
+    let locationInfo = "Unknown Location";
+    try {
+      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+      const { city, regionName, country } = response.data;
+      locationInfo = `${city}, ${regionName}, ${country}`;
+    } catch (locationError) {
+      console.error("Error fetching location data:", locationError);
+    }
 
     // Send Login Notification Email
     await transporter.sendMail({
@@ -428,6 +436,7 @@ app.post("/account/login", async (req, res) => {
                
                 <li><strong>Email:</strong> ${user.email}</li>
                 <li><strong>IP Address:</strong> ${clientIP}</li>
+                <li><strong>Location:</strong> ${locationInfo}</li>
               </ul>
               <p style="font-size: 16px;">
                 If this was not you, please secure your account immediately by changing your password.
@@ -453,7 +462,6 @@ app.post("/account/login", async (req, res) => {
         id: user._id,
       },
     });
-
   } catch (error) {
     console.error("Login error:", error);
     return res
