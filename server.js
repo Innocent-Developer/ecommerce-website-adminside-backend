@@ -285,9 +285,42 @@ app.post("/account/signup", async (req, res) => {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: user.email,
-      subject: "Account Create Successfully",
-      html: `<p>Your Accout create successfully <br> If any Problem Please Click => <a href="https://wa.me/+923254472055">Contact Us</a></p>`,
+      subject: "🎉 Your Account Has Been Created Successfully!",
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
+          <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background-color: #4f46e5; color: #ffffff; padding: 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Welcome to Our Community!</h1>
+            </div>
+            <div style="padding: 30px; color: #333333;">
+              <p style="font-size: 18px; margin-bottom: 20px;">
+                🎉 <strong>Your account has been created successfully!</strong> 🎉
+              </p>
+              <p style="font-size: 16px; line-height: 1.5;">
+                Hello <strong>${user.Fullname}</strong>,<br>
+                We're thrilled to have you here. Here are your account details:
+              </p>
+              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 20px 0;">
+                <li><strong>Username:</strong> ${user.username}</li>
+                <li><strong>Full Name:</strong> ${user.Fullname}</li>
+                <li><strong>Email:</strong> ${user.email}</li>
+              </ul>
+              <p style="font-size: 16px;">
+                If you encounter any issues, feel free to reach out to us anytime.
+              </p>
+              <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                📞 Contact Us
+              </a>
+            </div>
+            <div style="background-color: #f4f4f7; padding: 15px; text-align: center; color: #888888; font-size: 14px;">
+              If you didn't create an account, please ignore this email.
+            </div>
+          </div>
+        </div>
+      `,
     });
+    
+    
   } catch (error) {
     res.status(500).send({ success: false, error: error.message });
   }
