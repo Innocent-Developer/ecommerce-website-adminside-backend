@@ -27,12 +27,7 @@ app.use(express.json({ limit: "10mb" })); // For JSON
 app.use(express.urlencoded({ extended: true })); // For form data
 app.use(express.json());
 app.use(cors());
-const cors = require('cors');
-app.use(cors({
-  origin: 'https://admin-onesolution.vercel.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
 
 // Create schema for orders
 const orderSchema = new Schema({
