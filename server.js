@@ -733,6 +733,43 @@ app.get("/getusersAdmin/:id", async (req, res) => {
   }
 });
 
+
+
+// update user information 
+app.get('/user-profile/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).send('User not found');
+    res.json(user);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
+// Update user profile by ID
+app.put('/user-profile/:id', async (req, res) => {
+  try {
+    const { Fullname, username, email, password, userImage } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        Fullname,
+        username,
+        email,
+        password,
+        userImage,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) return res.status(404).send('User not found');
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
 // Server listening
 app.listen(port, () => {
   console.log(`Server is up and listening on port ${port}`);
