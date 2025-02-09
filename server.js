@@ -747,9 +747,12 @@ app.get('/user-profile/:id', async (req, res) => {
 });
 
 // Update user profile by ID
+
+
 app.put('/user-profile/:id', async (req, res) => {
   try {
     const { Fullname, username, email, password, userImage } = req.body;
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
@@ -764,8 +767,49 @@ app.put('/user-profile/:id', async (req, res) => {
     );
 
     if (!updatedUser) return res.status(404).send('User not found');
+
+    // Send success email after the user is updated
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: [updatedUser.email, "abubakkarsajid4@gmail.com"],
+      subject: "✅ Your Profile Has Been Updated",
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
+          <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="background-color: #4f46e5; color: #ffffff; padding: 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Profile Update Confirmation</h1>
+            </div>
+            <div style="padding: 30px; color: #333333;">
+              <p style="font-size: 18px; margin-bottom: 20px;">
+                Hello <strong>${updatedUser.Fullname}</strong>,
+              </p>
+              <p style="font-size: 16px; line-height: 1.5;">
+                This is to confirm that your profile information has been successfully updated.
+              </p>
+              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 20px 0;">
+                <li><strong>Full Name:</strong> ${updatedUser.Fullname}</li>
+                <li><strong>Username:</strong> ${updatedUser.username}</li>
+                <li><strong>Email:</strong> ${updatedUser.email}</li>
+                <li><strong>Updated At:</strong> ${updatedUser.updatedAt.toLocaleString()}</li>
+              </ul>
+              <p style="font-size: 16px;">
+                If you did not make this change, please contact our support team immediately.
+              </p>
+              <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
+                📞 Contact Support
+              </a>
+            </div>
+            <div style="background-color: #f4f4f7; padding: 15px; text-align: center; color: #888888; font-size: 14px;">
+              If you recognize this activity, no further action is needed.
+            </div>
+          </div>
+        </div>
+      `,
+    });
+
     res.json(updatedUser);
   } catch (error) {
+    console.error('Error updating user:', error);
     res.status(500).send('Server error');
   }
 });
