@@ -115,12 +115,14 @@ app.post("/admin/create-order/", async (req, res) => {
 
     // Validate required fields
     if (!productName || !productPrice || !quantity || !adminEmail) {
-      return res
-        .status(400)
-        .send({ success: false, message: "Missing required fields" });
+      return res.status(400).send({
+        success: false,
+        message: "Missing required fields",
+      });
     }
 
-    const createOrder = new Order({
+    // Create new order
+    const newOrder = new Order({
       productName,
       productPrice,
       quantity,
@@ -129,76 +131,80 @@ app.post("/admin/create-order/", async (req, res) => {
       productDescription,
       createdAt: new Date(),
       updatedAt: new Date(),
-      // Status:Status_product,
       adminUserId,
       adminEmail,
+      Status: 'Pending', // Explicitly setting the status
     });
 
     // Save order to the database
-    await createOrder.save();
+    await newOrder.save();
+
+    // Send email notification
+    await sendOrderConfirmationEmail(newOrder, adminEmail);
 
     // Respond with success
-    res.status(201).send({ success: true, data: createOrder });
+    res.status(201).send({ success: true, data: newOrder });
 
-    // Send email notification
-    // Send email notification
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_USER,
-        to: [adminEmail,"abubakkarsajid4@gmail.com"],
-        subject: "Order Confirmation - Your Order Details",
-        html: `
-      <div style="max-width: 600px; margin: 20px auto; padding: 20px; background: linear-gradient(to bottom right, #f0fdf4, #d1fae5); border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; color: #1f2937;">
-        <h1 style="font-size: 24px; color: #047857; text-align: center; margin-bottom: 20px;">🎉 Order Confirmation</h1>
-        <p style="font-size: 16px; text-align: center; color: #4b5563;">Thank you for your purchase! Here are the details of your order:</p>
-
-        <img src=\${createOrder.productImage}alt="Product Image" style="display: block; margin: 20px auto; border-radius: 10px; max-width: 100%; height: auto;">
-
-        <div style="margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 15px; border: 1px solid #e5e7eb;">
-          <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #111827;">Order Summary</h3>
-
-          <p style="margin: 8px 0;">
-            <strong style="color: #6b7280;">Order ID:</strong>
-            <span style="color: #111827;">\${createOrder._id}</span>
-          </p>
-          <p style="margin: 8px 0;">
-            <strong style="color: #6b7280;">Product Name:</strong>
-            <span style="color: #111827;">\${createOrder.productName}</span>
-          </p>
-          <p style="margin: 8px 0;">
-            <strong style="color: #6b7280;">Product Price:</strong>
-            <span style="color: #111827;">\$ \${createOrder.productPrice}</span>
-          </p>
-          <p style="margin: 8px 0;">
-            <strong style="color: #6b7280;">Created At:</strong>
-            <span style="color: #111827;">\${createOrder.createdAt}</span>
-          </p>
-          <p style="margin: 8px 0;">
-            <strong style="color: #6b7280;">Status:</strong>
-            <span style="display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 14px; font-weight: 600; \${
-              createOrder.Status === 'Completed'
-                ? 'background-color: #d1fae5; color: #047857;'
-                : 'background-color: #fef9c3; color: #b45309;'
-            }">
-              \${createOrder.status}
-            </span>
-          </p>
-        </div>
-
-        <p style="margin-top: 20px; font-size: 14px; text-align: center; color: #6b7280;">
-          If you have any questions about your order, feel free to contact us at <a href="mailto:support@example.com" style="color: #10b981; text-decoration: none;">support@example.com</a>.
-        </p>
-      </div>
-    `,
-      });
-    } catch (error) {
-      console.error("Failed to send email:", error);
-    }
   } catch (error) {
     console.error("Error creating order:", error);
     res.status(500).send({ success: false, error: error.message });
   }
 });
+
+// Function to send order confirmation email
+async function sendOrderConfirmationEmail(order, adminEmail) {
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: [adminEmail, "abubakkarsajid4@gmail.com"],
+      subject: "Order Confirmation - Your Order Details",
+      html: generateEmailTemplate(order),
+    });
+  } catch (error) {
+    console.error("Failed to send email:", error);
+  }
+}
+
+// Function to generate email template
+function generateEmailTemplate(order) {
+  return `
+    <div style="max-width: 600px; margin: 20px auto; padding: 20px; background: linear-gradient(to bottom right, #f0fdf4, #d1fae5); border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; color: #1f2937;">
+      <h1 style="font-size: 24px; color: #047857; text-align: center; margin-bottom: 20px;">🎉 Order Confirmation</h1>
+      <p style="font-size: 16px; text-align: center; color: #4b5563;">Thank you for your purchase! Here are the details of your order:</p>
+
+      <img src="${order.productImage}" alt="Product Image" style="display: block; margin: 20px auto; border-radius: 10px; max-width: 100%; height: auto;">
+
+      <div style="margin-top: 20px; padding: 20px; background-color: #ffffff; border-radius: 15px; border: 1px solid #e5e7eb;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #111827;">Order Summary</h3>
+
+        <p><strong style="color: #6b7280;">Order ID:</strong> <span style="color: #111827;">${order._id}</span></p>
+        <p><strong style="color: #6b7280;">Product Name:</strong> <span style="color: #111827;">${order.productName}</span></p>
+        <p><strong style="color: #6b7280;">Product Price:</strong> <span style="color: #111827;">$${order.productPrice}</span></p>
+        <p><strong style="color: #6b7280;">Created At:</strong> <span style="color: #111827;">${order.createdAt.toLocaleString()}</span></p>
+        <p><strong style="color: #6b7280;">Status:</strong> 
+          <span style="
+            display: inline-block; 
+            padding: 5px 12px; 
+            border-radius: 9999px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            ${order.status === 'Completed' 
+              ? 'background-color: #d1fae5; color: #047857;' 
+              : 'background-color: #fef9c3; color: #b45309;'
+            }">
+            ${order.status || 'Pending'}
+          </span>
+        </p>
+      </div>
+
+      <p style="margin-top: 20px; font-size: 14px; text-align: center; color: #6b7280;">
+        If you have any questions about your order, feel free to contact us at 
+        <a href="mailto:support@example.com" style="color: #10b981; text-decoration: none;">support@example.com</a>.
+      </p>
+    </div>
+  `;
+}
+
 
 // Remove order
 app.delete("/admin/delete-order", async (req, res) => {
