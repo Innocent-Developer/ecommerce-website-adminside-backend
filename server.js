@@ -608,62 +608,41 @@ app.post("/account/forgot-password", async (req, res) => {
 //   }
 // }
 
-// Password Reset Route
+// Reset password route
 app.post("/account/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    console.log("Received token and password:", token, newPassword);
-
-    // Verify JWT Token
+    // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log("Decoded Token:", decoded);
-
     const user = await User.findById(decoded.id);
-    console.log("User found:", user);
-
     if (!user) {
       return res.status(404).send({ success: false, error: "Invalid token." });
     }
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    console.log("Password hashed successfully");
 
+    // Update user's password
     user.password = hashedPassword;
     await user.save();
-    console.log("Password updated in DB");
 
     // Get client's IP address
-    const clientIP =
-      req.headers["x-forwarded-for"] ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
-      (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-    console.log("Client IP:", clientIP);
-
+    // Fetch location data based on IP address
     let locationInfo = "Unknown Location";
-
-    if (clientIP === "::1" || clientIP === "127.0.0.1") {
-      locationInfo = "Localhost (Development)";
-    } else {
-      try {
-        const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
-        if (response.data.status === "success") {
-          const { city, regionName, country } = response.data;
-          locationInfo = `${city || "Unknown City"}, ${regionName || "Unknown Region"}, ${country || "Unknown Country"}`;
-        } else {
-          console.warn("IP Geolocation failed:", response.data.message);
-        }
-      } catch (locationError) {
-        console.error("Error fetching location data:", locationError.message);
-      }
+    try {
+      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+      const { city, regionName, country } = response.data;
+      locationInfo = `${city}, ${regionName}, ${country}`;
+    } catch (locationError) {
+      console.error("Error fetching location data:", locationError);
     }
 
-    // Send Confirmation Email (Original Design Preserved)
+    // Send confirmation email
     await transporter.sendMail({
-      from: SMTP_USER,
+      from: process.env.SMTP_USER,
       to: user.email,
       subject: "🔒 Your Password Was Successfully Reset",
       html: `
@@ -673,16 +652,25 @@ app.post("/account/reset-password", async (req, res) => {
               <h1 style="margin: 0; font-size: 24px;">Password Reset Confirmation</h1>
             </div>
             <div style="padding: 30px; color: #333333;">
-              <p style="font-size: 18px; margin-bottom: 20px;">Hello <strong>${user.FullName}</strong>,</p>
-              <p style="font-size: 16px;">Your password has been successfully reset.</p>
-              <p style="margin-top: 20px; font-size: 16px;"><strong>Reset Details:</strong></p>
-              <ul style="list-style: none; padding: 0; font-size: 16px;">
+              <p style="font-size: 18px; margin-bottom: 20px;">
+                Hello <strong>${user.FullName}</strong>,
+              </p>
+              <p style="font-size: 16px; line-height: 1.5;">
+                Your password has been successfully reset. If you performed this action, no further steps are required.
+              </p>
+              <p style="margin-top: 20px; font-size: 16px;">
+                <strong>Reset Details:</strong>
+              </p>
+              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 10px 0;">
                 <li><strong>Username:</strong> ${user.username}</li>
+                <li><strong>Full Name:</strong> ${user.FullName}</li>
                 <li><strong>Email:</strong> ${user.email}</li>
                 <li><strong>IP Address:</strong> ${clientIP}</li>
                 <li><strong>Location:</strong> ${locationInfo}</li>
               </ul>
-              <p style="font-size: 16px;">If you did not request this, please secure your account immediately.</p>
+              <p style="font-size: 16px;">
+                If you did not request this password reset, please secure your account immediately by changing your password and contacting support.
+              </p>
               <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
                 📞 Contact Support
               </a>
@@ -695,12 +683,11 @@ app.post("/account/reset-password", async (req, res) => {
       `,
     });
 
-    console.log("Confirmation email sent to:", user.email);
-
+    // Respond with success
     res.send({ success: true, message: "Password reset successful." });
+
   } catch (error) {
     console.error("Reset Password Error:", error);
-
     res.status(500).send({
       success: false,
       error: error.name === "TokenExpiredError" ? "Token expired." : error.message,
