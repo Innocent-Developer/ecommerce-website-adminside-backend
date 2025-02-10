@@ -613,9 +613,14 @@ app.post("/account/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
+    console.log("Received token and password:", token, newPassword);
+
     // Verify JWT Token
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log("Decoded Token:", decoded);
+
     const user = await User.findById(decoded.id);
+    console.log("User found:", user);
 
     if (!user) {
       return res.status(404).send({ success: false, error: "Invalid token." });
@@ -623,15 +628,20 @@ app.post("/account/reset-password", async (req, res) => {
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log("Password hashed successfully");
+
     user.password = hashedPassword;
     await user.save();
+    console.log("Password updated in DB");
 
-    // Get client's IP address (Handle IPv6 localhost case)
+    // Get client's IP address
     const clientIP =
       req.headers["x-forwarded-for"] ||
       req.connection.remoteAddress ||
       req.socket.remoteAddress ||
       (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    console.log("Client IP:", clientIP);
 
     let locationInfo = "Unknown Location";
 
@@ -651,7 +661,7 @@ app.post("/account/reset-password", async (req, res) => {
       }
     }
 
-    // Send Confirmation Email
+    // Send Confirmation Email (Original Design Preserved)
     await transporter.sendMail({
       from: SMTP_USER,
       to: user.email,
@@ -685,9 +695,11 @@ app.post("/account/reset-password", async (req, res) => {
       `,
     });
 
+    console.log("Confirmation email sent to:", user.email);
+
     res.send({ success: true, message: "Password reset successful." });
   } catch (error) {
-    console.error("Reset Password Error:", error.message);
+    console.error("Reset Password Error:", error);
 
     res.status(500).send({
       success: false,
@@ -695,7 +707,6 @@ app.post("/account/reset-password", async (req, res) => {
     });
   }
 });
-
 // admin user get informations
 app.get("/getusersAdmin/:id", async (req, res) => {
   try {
