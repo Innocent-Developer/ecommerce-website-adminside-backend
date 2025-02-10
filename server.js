@@ -490,15 +490,16 @@ app.post("/account/forgot-password", async (req, res) => {
     // Generate a reset token (valid for 15 minutes)
     const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "15m" });
 
-    // Get client's IP address
-    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    console.log("Client IP:", clientIP);
+    // Get client's IP address with better handling
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = (forwarded ? forwarded.split(',')[0] : req.socket.remoteAddress).trim();
 
-    // Fetch location data based on IP address
-    let locationInfo = "Unknown Location";
-    if (clientIP === '::1' || clientIP === '127.0.0.1') {
-      locationInfo = "Localhost (Development)";
-    } else {
+    // Check for private/local IPs
+    const isPrivateIP = /^(10\.|192\.168|172\.(1[6-9]|2[0-9]|3[0-1])|::1|127\.)/.test(clientIP);
+    let locationInfo = isPrivateIP ? "Private Network" : "Unknown Location";
+
+    // Fetch location data only if IP is public
+    if (!isPrivateIP) {
       try {
         const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
         console.log("Location API Response:", response.data);
@@ -510,8 +511,10 @@ app.post("/account/forgot-password", async (req, res) => {
           console.warn("IP Geolocation failed:", response.data.message);
         }
       } catch (locationError) {
-        console.error("Error fetching location data:", locationError);
+        console.error("Error fetching location data:", locationError.message);
       }
+    } else {
+      console.log(`Skipping geolocation for private IP: ${clientIP}`);
     }
 
     // Configure nodemailer
@@ -538,7 +541,7 @@ app.post("/account/forgot-password", async (req, res) => {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: [email, "abubakkarsajid4@gmail.com"],
-      subject: "🔑 Password Reset Request",
+      subject: "\ud83d\udd11 Password Reset Request",
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
           <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden;">
@@ -553,7 +556,7 @@ app.post("/account/forgot-password", async (req, res) => {
                 We received a request to reset your password. If this was you, click the link below to proceed:
               </p>
               <a href="${resetLink}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
-                🔑 Reset Your Password
+                \ud83d\udd11 Reset Your Password
               </a>
               <p style="margin-top: 20px; font-size: 16px;">
                 <strong>Account Details:</strong>
@@ -568,7 +571,7 @@ app.post("/account/forgot-password", async (req, res) => {
                 If you did not request this, please ignore this email or contact support.
               </p>
               <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
-                📞 Contact Support
+                \ud83d\udcde Contact Support
               </a>
             </div>
             <div style="background-color: #f4f4f7; padding: 15px; text-align: center; color: #888888; font-size: 14px;">
@@ -587,6 +590,7 @@ app.post("/account/forgot-password", async (req, res) => {
     res.status(500).send({ success: false, error: error.message });
   }
 });
+
 // Send password reset confirmation email
 // async function sendResetPasswordEmail(userEmail) {
 //   const mailOptions = {
@@ -604,41 +608,52 @@ app.post("/account/forgot-password", async (req, res) => {
 //   }
 // }
 
-// Reset password route
+// Password Reset Route
 app.post("/account/reset-password", async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    // Verify token
+    // Verify JWT Token
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id);
+
     if (!user) {
       return res.status(404).send({ success: false, error: "Invalid token." });
     }
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update user's password
     user.password = hashedPassword;
     await user.save();
 
-    // Get client's IP address
-    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    // Get client's IP address (Handle IPv6 localhost case)
+    const clientIP =
+      req.headers["x-forwarded-for"] ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
-    // Fetch location data based on IP address
     let locationInfo = "Unknown Location";
-    try {
-      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
-      const { city, regionName, country } = response.data;
-      locationInfo = `${city}, ${regionName}, ${country}`;
-    } catch (locationError) {
-      console.error("Error fetching location data:", locationError);
+
+    if (clientIP === "::1" || clientIP === "127.0.0.1") {
+      locationInfo = "Localhost (Development)";
+    } else {
+      try {
+        const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+        if (response.data.status === "success") {
+          const { city, regionName, country } = response.data;
+          locationInfo = `${city || "Unknown City"}, ${regionName || "Unknown Region"}, ${country || "Unknown Country"}`;
+        } else {
+          console.warn("IP Geolocation failed:", response.data.message);
+        }
+      } catch (locationError) {
+        console.error("Error fetching location data:", locationError.message);
+      }
     }
 
-    // Send confirmation email
+    // Send Confirmation Email
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: SMTP_USER,
       to: user.email,
       subject: "🔒 Your Password Was Successfully Reset",
       html: `
@@ -648,25 +663,16 @@ app.post("/account/reset-password", async (req, res) => {
               <h1 style="margin: 0; font-size: 24px;">Password Reset Confirmation</h1>
             </div>
             <div style="padding: 30px; color: #333333;">
-              <p style="font-size: 18px; margin-bottom: 20px;">
-                Hello <strong>${user.FullName}</strong>,
-              </p>
-              <p style="font-size: 16px; line-height: 1.5;">
-                Your password has been successfully reset. If you performed this action, no further steps are required.
-              </p>
-              <p style="margin-top: 20px; font-size: 16px;">
-                <strong>Reset Details:</strong>
-              </p>
-              <ul style="list-style: none; padding: 0; font-size: 16px; margin: 10px 0;">
+              <p style="font-size: 18px; margin-bottom: 20px;">Hello <strong>${user.FullName}</strong>,</p>
+              <p style="font-size: 16px;">Your password has been successfully reset.</p>
+              <p style="margin-top: 20px; font-size: 16px;"><strong>Reset Details:</strong></p>
+              <ul style="list-style: none; padding: 0; font-size: 16px;">
                 <li><strong>Username:</strong> ${user.username}</li>
-                <li><strong>Full Name:</strong> ${user.FullName}</li>
                 <li><strong>Email:</strong> ${user.email}</li>
                 <li><strong>IP Address:</strong> ${clientIP}</li>
                 <li><strong>Location:</strong> ${locationInfo}</li>
               </ul>
-              <p style="font-size: 16px;">
-                If you did not request this password reset, please secure your account immediately by changing your password and contacting support.
-              </p>
+              <p style="font-size: 16px;">If you did not request this, please secure your account immediately.</p>
               <a href="https://wa.me/+923254472055" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px;">
                 📞 Contact Support
               </a>
@@ -679,17 +685,17 @@ app.post("/account/reset-password", async (req, res) => {
       `,
     });
 
-    // Respond with success
     res.send({ success: true, message: "Password reset successful." });
-
   } catch (error) {
-    console.error("Reset Password Error:", error);
+    console.error("Reset Password Error:", error.message);
+
     res.status(500).send({
       success: false,
       error: error.name === "TokenExpiredError" ? "Token expired." : error.message,
     });
   }
 });
+
 // admin user get informations
 app.get("/getusersAdmin/:id", async (req, res) => {
   try {
