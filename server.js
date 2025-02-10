@@ -381,53 +381,50 @@ app.get("/admin/user/information/:id", async (req, res) => {
 });
 
 // Login
-
 app.post("/account/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .send({ success: false, error: "Email and password are required." });
+      return res.status(400).send({ success: false, error: "Email and password are required." });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res
-        .status(400)
-        .send({ success: false, error: "Invalid login credentials." });
+      return res.status(400).send({ success: false, error: "Invalid login credentials." });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res
-        .status(400)
-        .send({ success: false, error: "Invalid login credentials." });
+      return res.status(400).send({ success: false, error: "Invalid login credentials." });
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: "1h" });
 
-    // Get client's IP address
-    const clientIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    // Get client's IP address with better handling
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIP = (forwarded ? forwarded.split(',')[0] : req.connection.remoteAddress).trim();
 
-    // Fetch location data based on IP address
-    let locationInfo = "Unknown Location";
-    try {
-      const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
-      const { countryCode, regionName, country } = response.data;
-      locationInfo = `${city}, ${regionName}, ${countryCode},${country}`;
-    } catch (locationError) {
-      console.error("Error fetching location data:", locationError);
+    // Check if the IP is public
+    const isPrivateIP = /^(10\.|192\.168|172\.(1[6-9]|2[0-9]|3[0-1]))/.test(clientIP);
+    let locationInfo = isPrivateIP ? "Private Network" : "Unknown Location";
+
+    // Fetch location data if IP is public
+    if (!isPrivateIP) {
+      try {
+        const response = await axios.get(`http://ip-api.com/json/${clientIP}`);
+        const { city, regionName, countryCode, country } = response.data;
+        locationInfo = `${city || 'Unknown City'}, ${regionName || 'Unknown Region'}, ${countryCode || ''} (${country || ''})`;
+      } catch (locationError) {
+        console.error("Error fetching location data:", locationError);
+      }
     }
 
     // Send Login Notification Email
     await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: [user.email,"abubakkarsajid4@gmail.com"],
+      to: [user.email, "abubakkarsajid4@gmail.com"],
       subject: "🔒 New Login Detected on Your Account",
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 20px;">
@@ -443,7 +440,6 @@ app.post("/account/login", async (req, res) => {
                 We noticed a login to your account from the following details:
               </p>
               <ul style="list-style: none; padding: 0; font-size: 16px; margin: 20px 0;">
-               
                 <li><strong>Email:</strong> ${user.email}</li>
                 <li><strong>IP Address:</strong> ${clientIP}</li>
                 <li><strong>Location:</strong> ${locationInfo}</li>
@@ -474,9 +470,7 @@ app.post("/account/login", async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    return res
-      .status(500)
-      .send({ success: false, error: "An error occurred. Please try again." });
+    return res.status(500).send({ success: false, error: "An error occurred. Please try again." });
   }
 });
 
